@@ -5,10 +5,6 @@ communication for NATd client machines.
 Just run 'autortunnel' which is an interactive script to generate the
 proper configs.
 
-Notes:
-* Assumes you have a working ssh_key
-* Writes to ~/.ssh/config, make sure you're backed up
-
 For Linux machines, check out:
 * https://github.com/mikeymckay/reverse_ssh_tunnel
 
@@ -18,7 +14,8 @@ TODO
 * Finish ssh (non-autossh) path
 
 
-See also:
+See also
+---
 * http://www.vdomck.org/2009/11/ssh-all-time.html
 * https://github.com/datpham23/ReverseTunnel
 * http://unix.stackexchange.com/questions/80390/start-autossh-reverse-tunnel-automatically-when-network-comes-up
