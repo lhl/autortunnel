@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+
+
+import glob
+import os
+import platform
+from   pprint import pprint
+import re
+import readline
+import subprocess
+import sys
+
+
+def main():
+  version_check()
+
+  print '''
+AUTORTUNNEL INSTALLER
+===
+This script will easily generate changes to your ~/.ssh/config file 
+and install a plist to automatically try to make tunnels.
+  ''' 
+
+  ssh_keycheck()
+
+  # Use only w/ SSH version
+  # ssh_config()
+
+  if platform.system() == 'Darwin':
+    launch_config_osx()
+  else:
+    print 'Sorry, we currently only support auto-launching for OS X currently'
+
+
+def version_check():
+  if not (sys.version_info[0] == 2 and sys.version_info[1] >= 7):
+    print 'This script requires Python 2.7 to run!'
+    sys.exit()
+
+
+def ssh_keycheck():
+  print 
+  print 'Automatic tunnels require passphrase-less SSH keys to work.'
+  print 'Doing a simple (not-foolproof) check...'
+  if not glob.glob('%s/.ssh/*.pub' % os.path.expanduser('~')):
+    create_ssh = raw_input('We couldn\'t find an SSH keyfile, should we make one? (y/n) ').strip()
+    if create_ssh and create_ssh[0].lower() == 'y':
+      subprocess.call('ssh-keygen')
+  else:
+    print 'OK, found a key'
+  print
+
+
+
+def ssh_config():
+  server = raw_input('What is your server hostname? ').strip()
+  port = raw_input('What port on the server (>1024) do you want to use? ').strip()
+
+
+  # TODO: allow option for multiple autotunnels, add more logic
+  # rtdelimiter = '### AUTORTUNNEL %s:%s ###' % (server, port)
+  rtdelimiter = '### AUTORTUNNEL ###'
+
+  rtconf = '''
+%s
+Host autortunnel
+Compression yes
+Hostname = %s
+RemoteForward 127.0.0.1:%s 127.0.0.1:22
+%s''' % (rtdelimiter, server, port, rtdelimiter)
+
+  config_path = '%s/.ssh/config' % os.path.expanduser('~')
+
+  print
+  print 'Looking for ssh config: %s' % config_path
+
+  try:
+    config = open(config_path, 'r').read()
+    print 'Found it!'
+  except:
+    config = ''
+    print 'Not found! Will try to create a new one.'
+    
+  s = re.split(rtdelimiter, config)
+
+  if len(s) == 3:
+    print 'Replacing existing ### AUTORTUNNEL ### block'
+    config = open(config_path, 'w')
+    config.write(s[0])
+    config.write(rtconf)
+    config.write(s[2])
+    config.close()
+  else:
+    print 'Appending new ### AUTORTUNNEL ### block'
+    config = open(config_path, 'a')
+    config.write(rtconf)
+    config.write('\n')
+    config.close()
+
+
+def launch_config_osx():
+  try:
+    autossh = subprocess.check_output(['which', 'autossh']).strip()
+  except:
+    print 'Couldn\'t fine autossh executable! You can install it w/ MacPorts or Homebrew'
+    print 'or as a binary package from here: http://rudix.org/packages/autossh.html'
+    sys.exit()
+
+  plist = open('local.autortunnel.autossh.plist').read()
+  plist = plist.replace('REPLACE_AUTOSSH_BIN', autossh)
+  server = raw_input('What is your server hostname? ').strip()
+  plist = plist.replace('REPLACE_AUTOSSH_SERVER', server)
+  rtunnel_port = raw_input('What port on the server (>1024) do you want to use to connect? (default 2222)').strip()
+  if not rtunnel_port:
+    rtunnel_port = '2222'
+  plist = plist.replace('REPLACE_AUTOSSH_RTUNNEL_PORT', '%s:127.0.0.1:22' % rtunnel_port)
+  monitor_port = raw_input('What port should autossh use to monitor the connection (default 22222)? ').strip()
+  if not monitor_port:
+    monitor_port = '22222'
+  plist = plist.replace('REPLACE_AUTOSSH_MONITOR_PORT', monitor_port)
+
+  launch_path = '%s/Library/LaunchAgents' % os.path.expanduser('~')
+  if not os.path.exists(launch_path):
+    os.mkdir(launch_path)
+  launch_file = '%s/local.autortunnel.autossh.plist' % launch_path
+  print 'Writing plist to %s' % launch_file
+  out = open(launch_file, 'w')
+  out.write(plist)
+  out.close()
+
+  print 'Loading Agent!'
+  subprocess.call(['launchctl', 'load', launch_file])
+
+  print
+  print 'If you didn\'t see any errors, this should be working?'
+  print 'Try to ssh into your server %s and then ssh to localhost:%s' % (server, rtunnel_port)
+  print
+
+
+
+
+if __name__ == '__main__':
+  main()

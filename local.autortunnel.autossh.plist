@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>local.autortunnel.autossh</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- Be a lot more respnsive -->
+    <key>AUTOSSH_POLL</key>
+    <string>10</string>
+  </dict>
+  <key>ProgramArguments</key>
+  <array>
+    <string>REPLACE_AUTOSSH_BIN</string>
+    <string>-N</string>
+    <string>-M</string>
+    <string>REPLACE_AUTOSSH_MONITOR_PORT</string>
+    <string>-R</string>
+    <string>REPLACE_AUTOSSH_RTUNNEL_PORT</string>
+    <string>REPLACE_AUTOSSH_SERVER</string>
+  </array>
+  <key>KeepAlive</key>
+  <dict>
+    <key>NetworkState</key>
+    <true/>
+  </dict>
+</dict>
+</plist>
